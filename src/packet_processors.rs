@@ -55,12 +55,10 @@ pub fn process_decode(
 impl PacketFramer {
     pub fn process_write(buffer: Buf) -> Buf {
         let size = buffer.get_writer_index();
-        let header_size = Buf::get_var_u32_size(size as u32);
-        if header_size > 3 {
-            panic!("header_size > 3")
-        }
-        let mut target = Buf::with_length(size as u32 + header_size);
-        target.write_var_u32(size as u32);
+        let header_size = Buf::get_var_u32_size(size);
+        assert!(header_size <= 3, "header_size > 3");
+        let mut target = Buf::with_length(size + header_size);
+        target.write_var_u32(size);
         target.append(&buffer, buffer.get_writer_index() as usize);
         target
     }

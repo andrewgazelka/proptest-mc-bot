@@ -23,7 +23,7 @@ pub fn write_login_start_packet(username: &String) -> Buf {
     let mut buf = Buf::with_length(1 + username.len() as u32);
     buf.write_packet_id(0x00);
 
-    buf.write_sized_str(&username);
+    buf.write_sized_str(username);
     buf.write_bool(false);
 
     buf
@@ -34,7 +34,7 @@ pub fn write_login_start_packet(username: &String) -> Buf {
 //0x02
 pub fn process_login_success_packet(
     buffer: &mut Buf,
-    mut bot: &mut Bot,
+    bot: &mut Bot,
     _compression: &mut Compression,
 ) {
     let _uuid = buffer.read_u128();
@@ -47,7 +47,7 @@ pub fn process_login_success_packet(
 //0x03
 pub fn process_set_compression_packet(
     buf: &mut Buf,
-    mut bot: &mut Bot,
+    bot: &mut Bot,
     _compression: &mut Compression,
 ) {
     bot.compression_threshold = buf.read_var_u32().0 as i32;

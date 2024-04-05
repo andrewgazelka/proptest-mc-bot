@@ -76,7 +76,7 @@ pub fn process_packet(
     // Process all of the Minecraft packets received
     loop {
         // Handle packet that have an incomplete size field
-        if packet_buf.get_writer_index() as u32 - next < 3 {
+        if packet_buf.get_writer_index() - next < 3 {
             buffer(packet_buf, &mut bot.buffering_buf);
             break;
         }
@@ -170,7 +170,7 @@ impl Bot {
         }
         let mut packet = buf;
         if self.compression_threshold > 0 {
-            packet = packet_processors::PacketCompressor::process_write(packet, &self, compression)
+            packet = packet_processors::PacketCompressor::process_write(packet, self, compression)
                 .unwrap();
         }
         packet = packet_processors::PacketFramer::process_write(packet);

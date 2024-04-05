@@ -35,7 +35,7 @@ fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 3 {
-        let name = args.get(0).unwrap();
+        let name = args.first().unwrap();
         #[cfg(unix)]
         println!("usage: {} <ip:port or path> <count> [threads]", name);
         #[cfg(not(unix))]
@@ -60,7 +60,7 @@ fn main() -> io::Result<()> {
     }
 
     if addrs.is_none() {
-        let mut parts = arg1.split(":");
+        let mut parts = arg1.split(':');
         let ip = parts.next().expect("no ip provided");
         let port = parts
             .next()
