@@ -354,12 +354,12 @@ pub enum Stream {
 
 impl Stream {
     pub fn set_ops(&mut self) {
-        match self {
-            Stream::TCP(s) => {
-                s.set_nodelay(true).unwrap();
-            }
-            _ => {}
-        }
+        // match self {
+        //     Stream::TCP(s) => {
+        //         s.set_nodelay(true).unwrap();
+        //     }
+        //     _ => {}
+        // }
     }
 }
 
