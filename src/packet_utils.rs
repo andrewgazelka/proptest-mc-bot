@@ -102,6 +102,7 @@ impl Buf {
         self.write_bytes(&other.buffer[0..len]);
     }
 
+    #[allow(clippy::uninit_vec)]
     pub fn ensure_writable(&mut self, num: u32) {
         if self.buffer.len() < (self.write_index + num) as usize {
             let new_bytes = self.write_index + num - self.buffer.len() as u32;

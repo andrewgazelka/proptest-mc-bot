@@ -60,6 +60,7 @@ pub fn process_packet(
         let len = packet_buf.buffer.len();
 
         // Reallocate if full
+        #[allow(clippy::uninit_vec)]
         if packet_buf.get_writer_index() == len as u32 {
             packet_buf.buffer.reserve(len);
             unsafe {
