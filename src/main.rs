@@ -1,14 +1,11 @@
 use std::io;
-use std::io::{Read, Write};
-use std::{env, net::ToSocketAddrs};
-
-use libdeflater::{Compressor, Decompressor};
-use mio::Token;
-use rand::prelude::*;
-
-use rust_mc_bot::{start_bots, Address};
 #[cfg(unix)]
 use std::path::PathBuf;
+use std::{env, net::ToSocketAddrs};
+
+use rand::prelude::*;
+
+use rust_mc_bot::{Address, BotManager};
 
 #[cfg(unix)]
 const UDS_PREFIX: &str = "unix://";
@@ -86,7 +83,8 @@ fn main() -> io::Result<()> {
 
             let addrs = addrs.clone();
             threads.push(std::thread::spawn(move || {
-                start_bots(count, addrs, names_used, cpus)
+                let mut manager = BotManager::create(count, addrs, names_used, cpus).unwrap();
+                manager.tick();
             }));
 
             names_used += count;
