@@ -1,6 +1,5 @@
 use crate::packet_utils::Buf;
 use crate::states::{login, play};
-use anyhow::ensure;
 use libdeflater::{CompressionLvl, Compressor, Decompressor};
 use mio::net::{TcpStream, UnixStream};
 use mio::{event, Events, Interest, Poll, Registry, Token};
@@ -11,6 +10,8 @@ use std::io;
 use std::io::{Read, Write};
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 mod net;
@@ -25,7 +26,7 @@ const PROTOCOL_VERSION: u32 = 763;
 const MESSAGES: &[&str] = &["This is a chat message!", "Wow", "Server = on?"];
 
 pub struct BotManager {
-    bots_joined: u32,
+    bot_on: Arc<AtomicU32>,
     addrs: Address,
     bots_per_tick: u32,
     tick_counter: u32,
@@ -36,29 +37,30 @@ pub struct BotManager {
     compression: Compression,
     poll: Poll,
     events: Events,
-    name_offset: u32,
     dur: Duration,
     count: u32,
 }
 
 impl BotManager {
-    pub fn create(count: u32, addrs: Address, name_offset: u32, cpus: u32) -> anyhow::Result<Self> {
-        ensure!(count > 0, "cannot start 0 bots");
-
-        let mut poll = Poll::new().expect("could not unwrap poll");
+    pub fn create(
+        count: u32,
+        addrs: Address,
+        cpus: u32,
+        bot_on: Arc<AtomicU32>,
+    ) -> anyhow::Result<Self> {
+        let poll = Poll::new().expect("could not unwrap poll");
         //todo check used cap
-        let mut events = Events::with_capacity((count * 5) as usize);
-        let mut map = HashMap::new();
+        let events = Events::with_capacity((count * 5) as usize);
+        let map = HashMap::new();
 
         // println!("{:?}", addrs);
 
-        let bots_per_tick = (1.0 / cpus as f64).ceil() as u32;
-        let mut bots_joined = 0;
+        let bots_per_tick = 1;
 
-        let mut packet_buf = Buf::with_length(2000);
-        let mut uncompressed_buf = Buf::with_length(2000);
+        let packet_buf = Buf::with_length(2000);
+        let uncompressed_buf = Buf::with_length(2000);
 
-        let mut compression = Compression {
+        let compression = Compression {
             compressor: Compressor::new(CompressionLvl::default()),
             decompressor: Decompressor::new(),
         };
@@ -69,8 +71,7 @@ impl BotManager {
         let action_tick = 4;
 
         Ok(BotManager {
-            bots_joined,
-            name_offset,
+            bot_on,
             addrs,
             bots_per_tick,
             tick_counter,
@@ -86,12 +87,33 @@ impl BotManager {
         })
     }
 
+    pub fn game_loop(&mut self) {
+        loop {
+            let start = Instant::now();
+            self.tick();
+
+            let elapsed = start.elapsed();
+
+            if elapsed > self.dur {
+                continue;
+            }
+
+            if self.map.is_empty() {
+                break;
+            }
+
+            std::thread::sleep(self.dur - elapsed);
+        }
+    }
+
     pub fn tick(&mut self) {
-        if self.bots_joined < self.count {
+        let bots_joined = self.bot_on.fetch_add(self.bots_per_tick, Ordering::Relaxed);
+        if bots_joined < self.count {
             let registry = self.poll.registry();
-            for bot in self.bots_joined..(self.bots_per_tick + self.bots_joined).min(self.count) {
+            for bot in bots_joined..(self.bots_per_tick + bots_joined.min(self.count)) {
                 let token = Token(bot as usize);
-                let name = "Bot_".to_owned() + &(self.name_offset + bot).to_string();
+
+                let name = "Bot_".to_owned() + &(bot).to_string();
 
                 let mut bot = Bot {
                     token,
@@ -118,9 +140,10 @@ impl BotManager {
                     .expect("could not register");
 
                 self.map.insert(token, bot);
-
-                self.bots_joined += 1;
             }
+        } else {
+            // go down again
+            self.bot_on.fetch_sub(self.bots_per_tick, Ordering::Relaxed);
         }
 
         fn start_bot(bot: &mut Bot, compression: &mut Compression) {
@@ -136,7 +159,7 @@ impl BotManager {
             let buf = login::write_login_start_packet(&bot.name);
             bot.send_packet(buf, compression);
 
-            // println!("bot \"{}\" joined", bot.name);
+            println!("bot \"{}\" joined", bot.name);
         }
 
         self.poll

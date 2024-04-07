@@ -2,6 +2,8 @@ use std::io;
 #[cfg(unix)]
 use std::path::PathBuf;
 use std::{env, net::ToSocketAddrs};
+use std::sync::Arc;
+use std::sync::atomic::AtomicU32;
 
 use rand::prelude::*;
 
@@ -66,28 +68,18 @@ fn main() -> io::Result<()> {
     }
 
     println!("cpus: {}", cpus);
-
-    let count_per_thread = count / cpus;
-    let mut extra = count % cpus;
-    let mut names_used = 0;
+    
+    let bot_on = Arc::new(AtomicU32::new(0));
 
     if count > 0 {
         let mut threads = Vec::new();
         for _ in 0..cpus {
-            let mut count = count_per_thread;
-
-            if extra > 0 {
-                extra -= 1;
-                count += 1;
-            }
-
             let addrs = addrs.clone();
+            let bot_on = bot_on.clone();
             threads.push(std::thread::spawn(move || {
-                let mut manager = BotManager::create(count, addrs, names_used, cpus).unwrap();
-                manager.tick();
+                let mut manager = BotManager::create(count, addrs, cpus, bot_on).unwrap();
+                manager.game_loop()
             }));
-
-            names_used += count;
         }
 
         for thread in threads {
