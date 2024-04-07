@@ -87,8 +87,6 @@ impl BotManager {
     }
 
     pub fn tick(&mut self) {
-        let ins = Instant::now();
-
         if self.bots_joined < self.count {
             let registry = self.poll.registry();
             for bot in self.bots_joined..(self.bots_per_tick + self.bots_joined).min(self.count) {
@@ -167,11 +165,6 @@ impl BotManager {
                     }
                 }
             }
-        }
-
-        let elapsed = ins.elapsed();
-        if elapsed < self.dur {
-            std::thread::sleep(self.dur - elapsed);
         }
 
         let mut to_remove = Vec::new();
