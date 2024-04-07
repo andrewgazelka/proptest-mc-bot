@@ -50,7 +50,7 @@ impl BotManager {
         let mut events = Events::with_capacity((count * 5) as usize);
         let mut map = HashMap::new();
 
-        println!("{:?}", addrs);
+        // println!("{:?}", addrs);
 
         let bots_per_tick = (1.0 / cpus as f64).ceil() as u32;
         let mut bots_joined = 0;
