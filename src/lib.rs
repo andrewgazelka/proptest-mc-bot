@@ -159,7 +159,7 @@ impl BotManager {
             let buf = login::write_login_start_packet(&bot.name);
             bot.send_packet(buf, compression);
 
-            println!("bot \"{}\" joined", bot.name);
+            // println!("bot \"{}\" joined", bot.name);
         }
 
         self.poll
