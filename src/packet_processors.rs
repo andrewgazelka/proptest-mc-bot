@@ -48,7 +48,7 @@ pub fn process_decode(
     compression: &mut Compression,
 ) -> Option<()> {
     let packet_id = buffer.read_var_u32().0 as u8;
-    (lookup_packet(bot.state, packet_id)?)(buffer, bot, compression);
+    lookup_packet(bot.state, packet_id)?(buffer, bot, compression);
     Some(())
 }
 
@@ -66,13 +66,13 @@ impl PacketFramer {
 
 impl PacketCompressor {
     pub fn process_write(
-        mut buffer: Buf,
+        buffer: Buf,
         bot: &Bot,
         compression: &mut Compression,
     ) -> Result<Buf, Error> {
         if buffer.get_writer_index() as i32 > bot.compression_threshold {
             let mut buf = Buf::new();
-            compress_packet(&mut buffer, &mut compression.compressor, &mut buf)?;
+            compress_packet(&buffer, &mut compression.compressor, &mut buf)?;
             Ok(buf)
         } else {
             let mut buf = Buf::new();

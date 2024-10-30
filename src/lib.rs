@@ -13,6 +13,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use antithesis_sdk::random::AntithesisRng;
 
 mod net;
 mod packet_processors;
@@ -42,18 +43,13 @@ pub struct BotManager {
 }
 
 impl BotManager {
-    pub fn create(
-        count: u32,
-        addrs: Address,
-        cpus: u32,
-        bot_on: Arc<AtomicU32>,
-    ) -> anyhow::Result<Self> {
+    pub fn create(count: u32, addrs: Address, bot_on: Arc<AtomicU32>) -> anyhow::Result<Self> {
+        antithesis_sdk::antithesis_init();
+
         let poll = Poll::new().expect("could not unwrap poll");
         //todo check used cap
         let events = Events::with_capacity((count * 5) as usize);
         let map = HashMap::new();
-
-        // println!("{:?}", addrs);
 
         let bots_per_tick = 1;
 
@@ -67,7 +63,7 @@ impl BotManager {
 
         let dur = Duration::from_millis(50);
 
-        let mut tick_counter = 0;
+        let tick_counter = 0;
         let action_tick = 4;
 
         Ok(BotManager {
@@ -110,16 +106,16 @@ impl BotManager {
         let bots_joined = self.bot_on.fetch_add(self.bots_per_tick, Ordering::Relaxed);
         if bots_joined < self.count {
             let registry = self.poll.registry();
-            for bot in bots_joined..(self.bots_per_tick + bots_joined.min(self.count)) {
-                let token = Token(bot as usize);
+            for bot_id in bots_joined..(self.bots_per_tick + bots_joined.min(self.count)) {
+                let token = Token(bot_id as usize);
 
-                let name = "Bot_".to_owned() + &(bot).to_string();
+                let name = format!("Bot_{bot_id}");
 
                 let mut bot = Bot {
                     token,
                     stream: self.addrs.connect(),
                     name,
-                    id: bot,
+                    id: bot_id,
                     entity_id: 0,
                     compression_threshold: 0,
                     state: 0,
@@ -199,12 +195,12 @@ impl BotManager {
                 bot.send_packet(play::write_current_pos(bot), &mut self.compression);
 
                 if (self.tick_counter + bot.id) % self.action_tick == 0 {
-                    match rand::thread_rng().gen_range(0..=4u8) {
+                    match AntithesisRng.gen_range(0..=4u8) {
                         0 => {
                             // Send chat
                             bot.send_packet(
                                 play::write_chat_message(
-                                    MESSAGES.choose(&mut rand::thread_rng()).unwrap(),
+                                    MESSAGES.choose(&mut AntithesisRng).unwrap(),
                                 ),
                                 &mut self.compression,
                             );
@@ -241,7 +237,7 @@ impl BotManager {
                         4 => {
                             // Held item
                             bot.send_packet(
-                                play::write_held_slot(rand::thread_rng().gen_range(0..9)),
+                                play::write_held_slot(AntithesisRng.gen_range(0..9)),
                                 &mut self.compression,
                             );
                         }

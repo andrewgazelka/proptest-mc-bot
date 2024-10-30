@@ -58,7 +58,7 @@ impl Buf {
     pub fn is_nonoverlapping<T>(src: *const T, dst: *const T, count: usize) -> bool {
         let src_usize = src as usize;
         let dst_usize = dst as usize;
-        let size = mem::size_of::<T>().checked_mul(count).unwrap();
+        let size = size_of::<T>().checked_mul(count).unwrap();
         let diff = if src_usize > dst_usize {
             src_usize - dst_usize
         } else {

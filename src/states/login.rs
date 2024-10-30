@@ -19,7 +19,7 @@ pub fn write_handshake_packet(
     buf
 }
 
-pub fn write_login_start_packet(username: &String) -> Buf {
+pub fn write_login_start_packet(username: &str) -> Buf {
     let mut buf = Buf::with_length(1 + username.len() as u32);
     buf.write_packet_id(0x00);
 

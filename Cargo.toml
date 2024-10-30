@@ -16,3 +16,4 @@ libdeflater = "0.14"
 num_cpus = "1"
 rand = "0.8"
 anyhow = "1.0.81"
+antithesis_sdk = { git = "https://github.com/andrewgazelka/antithesis-sdk-rust" , branch = "andrew/rng"}

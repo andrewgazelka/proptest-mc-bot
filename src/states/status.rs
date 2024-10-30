@@ -11,18 +11,3 @@ pub fn process_pong(buffer: &mut Buf, _bot: &mut Bot, _compression: &mut Compres
     println!("got pong {}", payload)
 }
 
-pub fn write_status_request() -> Buf {
-    let mut buf = Buf::new();
-    buf.write_packet_id(0x00);
-
-    buf
-}
-
-pub fn write_ping(payload: u64) -> Buf {
-    let mut buf = Buf::new();
-    buf.write_packet_id(0x01);
-
-    buf.write_u64(payload);
-
-    buf
-}
